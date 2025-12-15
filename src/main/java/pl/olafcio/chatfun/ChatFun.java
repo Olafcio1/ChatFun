@@ -19,6 +19,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
@@ -179,12 +180,16 @@ public final class ChatFun extends JavaPlugin implements Listener {
 
         String hiddenKey = null;
         if (game.name.equals("unscramble")) {
-            var chars = key.chars()
-                           .mapToObj(c -> (char) c)
-                           .collect(Collectors.toCollection(ArrayList::new));
+            var words = Arrays.stream(key.split(" ")).map(word -> {
+                var chars = word.chars()
+                                .mapToObj(c -> (char) c)
+                                .collect(Collectors.toCollection(ArrayList::new));
 
-            Collections.shuffle(chars, random);
-            hiddenKey = StringUtils.join(chars.toArray(Character[]::new));
+                Collections.shuffle(chars, random);
+                return StringUtils.join(chars.toArray(Character[]::new));
+            });
+
+            hiddenKey = words.collect(Collectors.joining(" "));
         }
 
         announce(game, hiddenKey);
