@@ -23,6 +23,16 @@ public enum MessageUtil {
                     .replace("&f", "<white>");
     }
 
+    public static String replaceLegacyFormatting(String input) {
+        return input
+                    .replace("&l", "<bold>")
+                    .replace("&o", "<italic>")
+                    .replace("&n", "<underlined>")
+                    .replace("&m", "<strikethrough>")
+                    .replace("&k", "<obfuscated>")
+                    .replace("&r", "<reset>");
+    }
+
     public static String replaceLegacyHex(String input) {
         return input.replaceAll("&#([A-Fa-f0-9]{6})", "<#$1>");
     }
@@ -31,8 +41,8 @@ public enum MessageUtil {
         return input.replaceAll("<(|/).+?>", "");
     }
 
-    private static final int CHAT_WIDTH = 91;
-    public static String parseCenter(String input) {
+    private static final int CHAT_WIDTH = 53;
+    public static String parseCenters(String input) {
         var lines = input.split("\n");
         for (var n = 0; n < lines.length; n++) {
             var line = lines[n];
@@ -49,5 +59,58 @@ public enum MessageUtil {
         }
 
         return String.join("\n", lines);
+    }
+
+    public static String parseMultiplies(String input) {
+        var chars = input.toCharArray();
+        var out = new StringBuilder();
+
+        var mulPhase = 0;
+        var mulStr = new StringBuilder();
+        var mulNum = new StringBuilder();
+
+        for (var ch : chars) {
+            if (mulPhase > 0) {
+                if (mulPhase == 1) {
+                    if (ch == '{') {
+                        out.append("{{");
+                        mulPhase = 0;
+                    } else {
+                        mulStr.append(ch);
+                        mulPhase = 2;
+                    }
+                } else if (mulPhase == 2) {
+                    if (ch == '*')
+                        mulPhase = 3;
+                    else mulStr.append(ch);
+                } else if (ch == '}') {
+                    var mulNuw = mulNum.toString();
+                    var mulStw = mulStr.toString();
+
+                    int amount;
+                    if (mulNuw.endsWith("%")) {
+                        amount = CHAT_WIDTH *
+                                 Integer.parseInt(mulNuw.substring(
+                                         0,
+                                         mulNuw.length() - 1
+                                 )) / 100;
+                    } else amount = Integer.parseInt(mulNuw);
+
+                    out.append(mulStw.repeat(amount));
+                    mulPhase = 0;
+
+                    mulStr.setLength(0);
+                    mulNum.setLength(0);
+                } else {
+                    mulNum.append(ch);
+                }
+            } else if (ch == '{') {
+                mulPhase = 1;
+            } else {
+                out.append(ch);
+            }
+        }
+
+        return out.toString();
     }
 }

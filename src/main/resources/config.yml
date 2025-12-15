@@ -17,26 +17,26 @@ games:
   unscramble:
     enabled: true
     message: |-
-      &7&m                   &r
+      &7&m{ *100%}&r
       &6<center>&lCHAT GAME&6</center>&r
-      &6<center>&m         </center>&r
+      &6<center>&m         &r</center>
       &6<center>Unscramble the word:</center>&r
-      &6<center>&n{{key}}</center>&r
-      &7&m                   &r
+      &6<center>&n{{key}}&r</center>
+      &7&m{ *100%}&r
 
     overrides: {}
 
 response-polling-rate: 0.5 # in seconds, overrideable
 correct-message: |- # overrideable
-  &7&m                   &r
+  &7&m{ *100%}&r
   &6<center>&lCORRECT ANSWER&6</center>&r
-  &6<center>&m         </center>&r
+  &6<center>&m              &r</center>
   &6<center>&l{{player}}&6 got it right!</center>&r
-  &7&m                   &r
+  &7&m{ *100%}&r
 miss-message: |- # overrideable
-  &7&m                   &r
+  &7&m{ *100%}&r
   &6<center>&lNO ANSWER&6</center>&r
-  &6<center>&m         </center>&r
+  &6<center>&m         &r</center>
   &6<center>The answer was:</center>&r
   &6<center>&l{{key}}</center>&r
-  &7&m                   &r
+  &7&m{ *100%}&r

@@ -3,8 +3,8 @@ package pl.olafcio.chatfun;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.key.Keyed;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.TextReplacementConfig;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Bukkit;
@@ -19,12 +19,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class ChatFun extends JavaPlugin implements Listener {
@@ -45,12 +47,12 @@ public final class ChatFun extends JavaPlugin implements Listener {
 
     record Game(
             @NotNull String name,
-            @NotNull Component message,
+            @NotNull String message,
             @NotNull ConfigurationSection custom,
             int interval, int maxTime, int minPlayers,
             int responsePollingRate,
-            @NotNull TextComponent correctMessage,
-            @NotNull TextComponent missMessage
+            @NotNull String correctMessage,
+            @NotNull String missMessage
     ) {}
 
     @SuppressWarnings("unchecked")
@@ -64,13 +66,15 @@ public final class ChatFun extends JavaPlugin implements Listener {
         return computeComplex(section, defaultValue, key, computer);
     }
 
-    @NotNull TextComponent str2component(String input) {
-        return PlainTextComponentSerializer.plainText().deserialize(
-                MessageUtil.parseCenter(
+    @NotNull Component str2component(String input) {
+        return MiniMessage.miniMessage().deserialize(
+                MessageUtil.parseCenters(
+                MessageUtil.parseMultiplies(
                 MessageUtil.replaceLegacyColors(
+                MessageUtil.replaceLegacyFormatting(
                 MessageUtil.replaceLegacyHex(
                         input
-                )))
+                )))))
         );
     }
 
@@ -82,19 +86,19 @@ public final class ChatFun extends JavaPlugin implements Listener {
         Consumer<Keyed> appender = item ->
                 options.add(item.key().value());
 
-        if (config.getBoolean("types.items"))
+        if (config.getBoolean("categories.items"))
             Registry.ITEM.stream().forEach(appender);
 
-        if (config.getBoolean("types.blocks"))
+        if (config.getBoolean("categories.blocks"))
             Registry.BLOCK.stream().forEach(appender);
 
-        if (config.getBoolean("types.effects"))
+        if (config.getBoolean("categories.effects"))
             Registry.EFFECT.stream().forEach(appender);
 
-        if (config.getBoolean("types.biomes"))
+        if (config.getBoolean("categories.biomes"))
             Registry.BIOME.stream().forEach(appender);
 
-        if (config.getBoolean("types.advancements"))
+        if (config.getBoolean("categories.advancements"))
             Registry.ADVANCEMENT.stream().forEach(appender);
     }
 
@@ -110,8 +114,8 @@ public final class ChatFun extends JavaPlugin implements Listener {
 
         var responsePollingRate = config.getInt("response-polling-rate") * 1000;
 
-        var correctMessage = str2component(config.getString("correct-message"));
-        var missMessage = str2component(config.getString("miss-message"));
+        var correctMessage = config.getString("correct-message");
+        var missMessage = config.getString("miss-message");
 
         var games = Stream.of("unscramble")
                 .map(name -> {
@@ -122,15 +126,15 @@ public final class ChatFun extends JavaPlugin implements Listener {
                 })
                 .filter(section -> section.getBoolean("enabled"))
                 .map(section -> new Game(
-                        section.getString("name"), // it is not null nigga
-                        str2component(section.getString("message")), // ts is not either
+                        section.getString("name"),
+                        section.getString("message"),
                         section,
                         compute(section, interval, "overrides.interval", this::second2ms),
                         compute(section, maxTime, "overrides.max-time", this::second2ms),
                         section.getInt("overrides.min-players", minPlayers),
                         compute(section, responsePollingRate, "overrides.response-polling-rate", this::second2ms),
-                        computeComplex(section, correctMessage, "overrides.correct-message", this::str2component),
-                        computeComplex(section, missMessage, "overrides.miss-message", this::str2component)
+                        section.getString("overrides.correct-message", correctMessage),
+                        section.getString("overrides.miss-message", missMessage)
                 ))
         .toList();
         var gamesAmount = games.size();
@@ -170,20 +174,28 @@ public final class ChatFun extends JavaPlugin implements Listener {
 
     void startGame(Game game) throws InterruptedException {
         key = options.get(random.nextInt(options.size()));
+        key = key.replace("_", " ");
+        key = key.substring(key.lastIndexOf("/") + 1);
 
         String hiddenKey = null;
-        if (game.name.equals("unscramble"))
-            hiddenKey = StringUtils.rotate(key, random.nextInt(key.length()));
+        if (game.name.equals("unscramble")) {
+            var chars = key.chars()
+                           .mapToObj(c -> (char) c)
+                           .collect(Collectors.toCollection(ArrayList::new));
+
+            Collections.shuffle(chars, random);
+            hiddenKey = StringUtils.join(chars.toArray(Character[]::new));
+        }
 
         announce(game, hiddenKey);
         awaitFor(game);
     }
 
     void announce(Game game, String secret) {
-        Bukkit.broadcast(game.message.replaceText(TextReplacementConfig.builder()
-                        .matchLiteral("{{key}}")
-                        .replacement(secret)
-        .build()));
+        Bukkit.broadcast(str2component(
+            game.message
+                .replace("{{key}}", secret)
+        ));
     }
 
     void awaitFor(Game game) throws InterruptedException {
@@ -196,10 +208,10 @@ public final class ChatFun extends JavaPlugin implements Listener {
 
         if (keyExpect) {
             keyExpect = false;
-            Bukkit.broadcast(activeGame.missMessage.replaceText(TextReplacementConfig.builder()
-                    .matchLiteral("{{key}}")
-                    .replacement(key)
-            .build()));
+            Bukkit.broadcast(str2component(
+                activeGame.missMessage
+                    .replace("{{key}}", key)
+            ));
         }
     }
 
@@ -207,18 +219,13 @@ public final class ChatFun extends JavaPlugin implements Listener {
     public void onChat(AsyncChatEvent event) {
         if (keyExpect) {
             var raw = PlainTextComponentSerializer.plainText().serialize(event.originalMessage());
-            if (raw.equals(key)) {
+            if (raw.equalsIgnoreCase(key)) {
                 keyExpect = false;
-                Bukkit.broadcast(activeGame.correctMessage
-                        .replaceText(TextReplacementConfig.builder()
-                                .matchLiteral("{{key}}")
-                                .replacement(key)
-                        .build())
-                        .replaceText(TextReplacementConfig.builder()
-                                .matchLiteral("{{player}}")
-                                .replacement(event.getPlayer().getName())
-                        .build())
-                );
+                Bukkit.broadcast(str2component(
+                    activeGame.correctMessage
+                        .replace("{{key}}", key)
+                        .replace("{{player}}", event.getPlayer().getName())
+                ));
             }
         }
     }
