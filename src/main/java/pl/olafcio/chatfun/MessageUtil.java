@@ -32,32 +32,20 @@ public enum MessageUtil {
     }
 
     private static final int CHAT_WIDTH = 91;
-    public static String parseFull(String input) {
+    public static String parseCenter(String input) {
         var lines = input.split("\n");
         for (var n = 0; n < lines.length; n++) {
             var line = lines[n];
-            var raw = decolor(line);
+            if (line.contains("<center>")) {
+                final var CENTER_REGEX = "<(|/)center>";
 
-            var parts = line.splitWithDelimiters("<(|/)full>", 5);
-            var out = new StringBuilder();
+                var raw = decolor(line);
 
-            for (var i = 0; i < parts.length; i++) {
-                if ((i-1)%2 == 0) {
-                    var nextFull = i + 2;
-                    var next = parts.length > nextFull
-                                ? decolor(parts[i + 1]).length()
-                                : raw.length();
+                var space = CHAT_WIDTH - raw.replaceAll(CENTER_REGEX, "").length();
+                var count = line.split(CENTER_REGEX).length - 1;
 
-                    out.append(" ".repeat(Math.max(0,
-                            CHAT_WIDTH -
-                            raw.substring(out.length(), next).length()
-                    )));
-                }
-
-                out.append(parts[i]);
+                lines[n] = line.replaceAll(CENTER_REGEX, " ".repeat(space / count));
             }
-
-            lines[n] = out.toString();
         }
 
         return String.join("\n", lines);

@@ -18,10 +18,10 @@ games:
     enabled: true
     message: |-
       &7&m                   &r
-      &6<full>&lCHAT GAME&6</full>&r
-      &6<full>&m         </full>&r
-      &6<full>Unscramble the word:</full>&r
-      &6<full>&n{{key}}</full>&r
+      &6<center>&lCHAT GAME&6</center>&r
+      &6<center>&m         </center>&r
+      &6<center>Unscramble the word:</center>&r
+      &6<center>&n{{key}}</center>&r
       &7&m                   &r
 
     overrides: {}
@@ -29,14 +29,14 @@ games:
 response-polling-rate: 0.5 # in seconds, overrideable
 correct-message: |- # overrideable
   &7&m                   &r
-  &6<full>&lCORRECT ANSWER&6</full>&r
-  &6<full>&m         </full>&r
-  &6<full>&l{{player}}&6 got it right!</full>&r
+  &6<center>&lCORRECT ANSWER&6</center>&r
+  &6<center>&m         </center>&r
+  &6<center>&l{{player}}&6 got it right!</center>&r
   &7&m                   &r
 miss-message: |- # overrideable
   &7&m                   &r
-  &6<full>&lNO ANSWER&6</full>&r
-  &6<full>&m         </full>&r
-  &6<full>The answer was:</full>&r
-  &6<full>&l{{key}}</full>&r
+  &6<center>&lNO ANSWER&6</center>&r
+  &6<center>&m         </center>&r
+  &6<center>The answer was:</center>&r
+  &6<center>&l{{key}}</center>&r
   &7&m                   &r

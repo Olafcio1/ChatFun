@@ -66,7 +66,7 @@ public final class ChatFun extends JavaPlugin implements Listener {
 
     @NotNull TextComponent str2component(String input) {
         return PlainTextComponentSerializer.plainText().deserialize(
-                MessageUtil.parseFull(
+                MessageUtil.parseCenter(
                 MessageUtil.replaceLegacyColors(
                 MessageUtil.replaceLegacyHex(
                         input
