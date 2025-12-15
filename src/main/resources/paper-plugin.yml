@@ -1,0 +1,8 @@
+name: ChatFun
+version: '1.0'
+main: pl.olafcio.chatfun.ChatFun
+api-version: '1.21'
+load: STARTUP
+authors: [Olafcio]
+description: Literally makes the chat fun
+website: https://olafcio1.github.io

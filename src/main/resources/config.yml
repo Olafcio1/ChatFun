@@ -1,0 +1,42 @@
+# ChatFun — Fun chat games plugin, completely free and open-source!
+# ~ made by Olafcio
+# > https://modrinth.com/plugin/chatfun
+
+interval: 60 # in seconds, overrideable
+max-time: 20 # in seconds, overrideable
+
+min-players: 2 # overrideable
+categories: # [!] non-overrideable
+  items: true
+  blocks: true
+  effects: true
+  biomes: true
+  advancements: true
+
+games:
+  unscramble:
+    enabled: true
+    message: |-
+      &7&m                   &r
+      &6<full>&lCHAT GAME&6</full>&r
+      &6<full>&m         </full>&r
+      &6<full>Unscramble the word:</full>&r
+      &6<full>&n{{key}}</full>&r
+      &7&m                   &r
+
+    overrides: {}
+
+response-polling-rate: 0.5 # in seconds, overrideable
+correct-message: |- # overrideable
+  &7&m                   &r
+  &6<full>&lCORRECT ANSWER&6</full>&r
+  &6<full>&m         </full>&r
+  &6<full>&l{{player}}&6 got it right!</full>&r
+  &7&m                   &r
+miss-message: |- # overrideable
+  &7&m                   &r
+  &6<full>&lNO ANSWER&6</full>&r
+  &6<full>&m         </full>&r
+  &6<full>The answer was:</full>&r
+  &6<full>&l{{key}}</full>&r
+  &7&m                   &r
