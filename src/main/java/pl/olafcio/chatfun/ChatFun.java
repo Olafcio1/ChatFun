@@ -3,7 +3,6 @@ package pl.olafcio.chatfun;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.key.Keyed;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextReplacementConfig;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.apache.commons.lang3.StringUtils;
@@ -24,7 +23,6 @@ import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -32,8 +30,8 @@ import java.util.stream.Stream;
 
 public final class ChatFun extends JavaPlugin implements Listener {
     private ExecutorService executor;
-    private Future<?> task;
     private Random random;
+    private Thread task;
 
     private int onlinePlayers = 0;
     private final ArrayList<String> options = new ArrayList<>();
@@ -41,7 +39,7 @@ public final class ChatFun extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        reload();
+        load();
 
         Bukkit.getPluginManager().registerEvents(this, this);
     }
@@ -103,7 +101,7 @@ public final class ChatFun extends JavaPlugin implements Listener {
             Registry.ADVANCEMENT.stream().forEach(appender);
     }
 
-    public void reload() {
+    public void load() {
         super.reloadConfig();
         var config = getConfig();
 
@@ -118,7 +116,7 @@ public final class ChatFun extends JavaPlugin implements Listener {
         var correctMessage = config.getString("correct-message");
         var missMessage = config.getString("miss-message");
 
-        var games = Stream.of("unscramble")
+        var games = Stream.of("unscramble", "repeat")
                 .map(name -> {
                     var section = config.getConfigurationSection("games." + name);
                     assert section != null;
@@ -142,20 +140,26 @@ public final class ChatFun extends JavaPlugin implements Listener {
 
         executor = Executors.newFixedThreadPool(2);
         random = new Random();
-        task = executor.submit(() -> {
-            while (true) {
-                var index = random.nextInt(gamesAmount);
-                var game = games.get(index);
+        task = new Thread(() -> {
+            try {
+                while (true) {
+                    var index = random.nextInt(gamesAmount);
+                    var game = games.get(index);
 
-                if (onlinePlayers < game.minPlayers) {
-                    Thread.sleep(1000);
-                    continue;
+                    if (onlinePlayers < game.minPlayers) {
+                        Thread.sleep(1000);
+                        continue;
+                    }
+
+                    Thread.sleep(game.interval);
+                    startGame(game);
                 }
-
-                Thread.sleep(game.interval);
-                startGame(game);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         });
+
+        task.start();
     }
 
     @EventHandler
@@ -174,12 +178,12 @@ public final class ChatFun extends JavaPlugin implements Listener {
     boolean keyExpect = false;
 
     void startGame(Game game) throws InterruptedException {
-        key = options.get(random.nextInt(options.size()));
-        key = key.replace("_", " ");
-        key = key.substring(key.lastIndexOf("/") + 1);
-
         String hiddenKey = null;
         if (game.name.equals("unscramble")) {
+            key = options.get(random.nextInt(options.size()));
+            key = key.replace("_", " ");
+            key = key.substring(key.lastIndexOf("/") + 1);
+
             var words = Arrays.stream(key.split(" ")).map(word -> {
                 var chars = word.chars()
                                 .mapToObj(c -> (char) c)
@@ -190,6 +194,22 @@ public final class ChatFun extends JavaPlugin implements Listener {
             });
 
             hiddenKey = words.collect(Collectors.joining(" "));
+        } else if (game.name.equals("repeat")) {
+            var alphabet = game.custom.getString("settings.key-alphabet").toCharArray();
+            var length = random.nextInt(
+                    game.custom.getInt("settings.key-length.min"),
+                    game.custom.getInt("settings.key-length.max")
+            );
+
+            hiddenKey = key =
+            random.ints(
+                    length,
+                    0, alphabet.length
+            ).map(x -> alphabet[x]).collect(
+                    StringBuilder::new,
+                    StringBuilder::appendCodePoint,
+                    StringBuilder::append
+            ).toString();
         }
 
         announce(game, hiddenKey);
@@ -237,7 +257,7 @@ public final class ChatFun extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
-        task.cancel(true);
+        task.interrupt();
         executor.shutdownNow();
     }
 }

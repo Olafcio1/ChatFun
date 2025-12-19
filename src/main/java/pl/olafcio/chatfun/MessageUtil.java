@@ -50,10 +50,12 @@ public enum MessageUtil {
                 final var CENTER_REGEX = "<(|/)center>";
 
                 var raw = decolor(line);
-
                 var space = CHAT_WIDTH - raw.replaceAll(CENTER_REGEX, "").length();
-                var count = line.split(CENTER_REGEX).length - 1;
 
+                if (space <= 0)
+                    continue;
+
+                var count = line.split(CENTER_REGEX).length - 1;
                 lines[n] = line.replaceAll(CENTER_REGEX, " ".repeat(space / count));
             }
         }
